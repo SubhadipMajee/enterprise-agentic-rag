@@ -1,0 +1,51 @@
+# =============================================================================
+# Docker Compose — Local Development
+# Spins up Redis alongside the FastAPI backend for local testing.
+# Usage:  docker compose up -d redis
+#         (then run FastAPI + Streamlit locally with REDIS_URL set)
+# =============================================================================
+
+services:
+  # ── Redis (conversation memory + rate limiting) ─────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: marathon-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server
+      --save 60 1
+      --loglevel warning
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ── FastAPI Backend (optional — you can also run with uvicorn locally) ──
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: marathon-backend
+    ports:
+      - "8000:8080"
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=development
+      - REDIS_URL=redis://redis:6379/0
+      - CHECKPOINT_BACKEND=redis
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+    driver: local
