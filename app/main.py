@@ -11,7 +11,11 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
 load_dotenv()
-logfire.configure(token=os.getenv("LOGFIRE_TOKEN"))
+_logfire_token = os.getenv("LOGFIRE_TOKEN")
+if _logfire_token and _logfire_token.strip():
+    logfire.configure(token=_logfire_token.strip())
+else:
+    logfire.configure(send_to_logfire=False)
 
 from fastapi import Depends, FastAPI, File, HTTPException, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
