@@ -30,15 +30,43 @@ portkey_client = Portkey(
 
 from langchain_groq import ChatGroq
 
+
+class FallbackChatModel:
+    """Invokes primary LLM (Portkey) and automatically falls back to direct ChatGroq on failure."""
+
+    def __init__(self, primary, fallback):
+        self.primary = primary
+        self.fallback = fallback
+
+    def invoke(self, *args, **kwargs):
+        if not self.primary:
+            return self.fallback.invoke(*args, **kwargs)
+        try:
+            return self.primary.invoke(*args, **kwargs)
+        except Exception as e:
+            logfire.warning(f"Primary LLM invocation failed ({e}). Falling back to direct ChatGroq.")
+            return self.fallback.invoke(*args, **kwargs)
+
+    def __getattr__(self, name):
+        if self.primary and hasattr(self.primary, name):
+            return getattr(self.primary, name)
+        return getattr(self.fallback, name)
+
+
 def get_langchain_llm(feature: str = "rag"):
     """
     Returns an optimized ChatGroq instance using Groq's high-speed inference engine.
-    If Portkey routing is configured, wraps with Portkey headers. Otherwise, connects
-    directly to Groq with fallback support.
+    If Portkey routing is configured, wraps with automatic fallback to ChatGroq on error.
     """
+    groq_llm = ChatGroq(
+        api_key=settings.GROQ_API_KEY or "not_configured",
+        model_name=settings.GROQ_MODEL,
+        temperature=0,
+    )
+
     if settings.PORTKEY_API_KEY:
         try:
-            return ChatOpenAI(
+            portkey_llm = ChatOpenAI(
                 api_key=settings.PORTKEY_API_KEY,
                 base_url=PORTKEY_GATEWAY_URL,
                 model=f"@{settings.GROQ_SLUG}/{settings.GROQ_MODEL}",
@@ -52,14 +80,11 @@ def get_langchain_llm(feature: str = "rag"):
                     }
                 )
             )
+            return FallbackChatModel(primary=portkey_llm, fallback=groq_llm)
         except Exception as e:
             logfire.warning(f"Portkey initialization skipped ({e}), using direct ChatGroq.")
 
-    return ChatGroq(
-        api_key=settings.GROQ_API_KEY or "not_configured",
-        model_name=settings.GROQ_MODEL,
-        temperature=0,
-    )
+    return groq_llm
 
 def extract_cache_status(response) -> str:
     """

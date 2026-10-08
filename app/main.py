@@ -174,10 +174,15 @@ def query(request: QueryRequest, identity: dict = Depends(authenticate)):
     except HTTPException:
         raise
     except Exception as e:
+        import sys
+        import traceback
+        sys.stderr.write(f"\n[BACKEND ERROR] Execution failed for query '{_preview(q)}': {e}\n")
+        traceback.print_exc(file=sys.stderr)
+        sys.stderr.flush()
         logfire.error(f"Backend execution failed: {e} | preview={_preview(q)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An internal error occurred while processing your request. Please try again later.",
+            detail=f"Backend execution error: {e}",
         )
 
 
