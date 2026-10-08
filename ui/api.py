@@ -1,6 +1,10 @@
 import os
 import requests
 from pathlib import Path
+from dotenv import load_dotenv
+
+ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT / ".env")
 
 
 def _secret(name: str, default: str = "") -> str:
@@ -15,6 +19,17 @@ def _secret(name: str, default: str = "") -> str:
 
 def backend_url() -> str:
     return _secret("BACKEND_URL", "http://localhost:8000").rstrip("/")
+
+
+def get_health(timeout: int = 4) -> dict:
+    try:
+        url = f"{backend_url()}/health"
+        res = requests.get(url, timeout=timeout)
+        if res.status_code == 200:
+            return res.json()
+    except Exception as e:
+        return {"status": "offline", "error": str(e)}
+    return {"status": "error"}
 
 
 def api_headers(user_id: str, debug: bool = False) -> dict:
