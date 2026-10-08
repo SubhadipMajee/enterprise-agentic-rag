@@ -100,9 +100,10 @@ class Settings:
 
     def validate(self) -> None:
         missing = []
+        if not self.GROQ_API_KEY and not self.PORTKEY_API_KEY:
+            missing.append("GROQ_API_KEY (or PORTKEY_API_KEY)")
+
         required = [
-            ("GROQ_API_KEY", self.GROQ_API_KEY),
-            ("PORTKEY_API_KEY", self.PORTKEY_API_KEY),
             ("QDRANT_API_KEY", self.QDRANT_API_KEY),
             ("QDRANT_CLUSTER_ENDPOINT (or QDRANT_URL)", self.QDRANT_URL),
             ("GEMINI_API_KEY (or GOOGLE_API_KEY)", self.GEMINI_API_KEY),
