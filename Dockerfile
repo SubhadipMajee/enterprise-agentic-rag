@@ -22,7 +22,7 @@ FROM python:3.11-slim-bookworm AS runtime
 
 # Install only runtime system deps (no compiler toolchain)
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    libgomp1 curl \
+    libgomp1 curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed Python packages from builder

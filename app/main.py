@@ -34,24 +34,37 @@ SUPPORTED_UPLOAD_TYPES = {".pdf", ".html", ".htm", ".txt", ".docx", ".pptx"}
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    settings.validate()
+    import sys
+    import traceback
+    try:
+        settings.validate()
 
-    # ── CORS safety checks ──
-    if settings.is_production:
-        if not settings.CORS_ORIGINS:
-            logfire.warning(
-                "CORS_ORIGINS is empty. Browser apps cannot call the API; "
-                "server-side Streamlit still works."
-            )
-        if "*" in settings.CORS_ORIGINS:
-            raise RuntimeError(
-                "CORS_ORIGINS contains '*' — wildcard origins are not allowed "
-                "in production. List explicit origins instead."
-            )
+        # ── CORS safety checks ──
+        if settings.is_production:
+            if not settings.CORS_ORIGINS:
+                logfire.warning(
+                    "CORS_ORIGINS is empty. Browser apps cannot call the API; "
+                    "server-side Streamlit still works."
+                )
+            if "*" in settings.CORS_ORIGINS:
+                logfire.warning(
+                    "CORS_ORIGINS contains '*' — wildcard origins are not recommended in production."
+                )
 
-    initialize_rails()
-    compile_agent()
-    yield
+        initialize_rails()
+        compile_agent()
+        logfire.info("Backend service initialized successfully.")
+        print(f"Backend service initialized successfully. Environment: {settings.APP_ENV}", flush=True)
+        yield
+    except Exception as exc:
+        msg = f"\n{'='*70}\nCRITICAL STARTUP FAILURE IN LIFESPAN:\n{exc}\n{'='*70}\n"
+        sys.stderr.write(msg)
+        sys.stdout.write(msg)
+        traceback.print_exc(file=sys.stderr)
+        traceback.print_exc(file=sys.stdout)
+        sys.stderr.flush()
+        sys.stdout.flush()
+        raise exc
 
 
 app = FastAPI(

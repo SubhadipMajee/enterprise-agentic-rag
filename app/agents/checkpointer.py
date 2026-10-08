@@ -16,36 +16,50 @@ def build_checkpointer():
 
     backend = settings.CHECKPOINT_BACKEND
     if backend == "redis":
-        from langgraph.checkpoint.redis import RedisSaver
-
-        saver = RedisSaver(redis_url=settings.REDIS_URL)
-        saver.setup()
-        _checkpointer = saver
-        return _checkpointer
+        try:
+            from langgraph.checkpoint.redis import RedisSaver
+            saver = RedisSaver(redis_url=settings.REDIS_URL)
+            saver.setup()
+            _checkpointer = saver
+            return _checkpointer
+        except Exception as exc:
+            import sys
+            import logfire
+            logfire.error(f"Failed to initialize Redis checkpointer ({exc}). Falling back to MemorySaver.")
+            sys.stderr.write(f"WARNING: Redis checkpointer init failed: {exc}. Using MemorySaver fallback.\n")
+            _checkpointer = MemorySaver()
+            return _checkpointer
 
     if backend == "postgres":
-        from psycopg.rows import dict_row
-        from psycopg_pool import ConnectionPool
-        from langgraph.checkpoint.postgres import PostgresSaver
+        try:
+            from psycopg.rows import dict_row
+            from psycopg_pool import ConnectionPool
+            from langgraph.checkpoint.postgres import PostgresSaver
 
-        _postgres_pool = ConnectionPool(
-            conninfo=settings.DATABASE_URL,
-            max_size=10,
-            kwargs={
-                "autocommit": True,
-                "prepare_threshold": 0,
-                "row_factory": dict_row,
-            },
-        )
-        saver = PostgresSaver(_postgres_pool)
-        saver.setup()
-        _checkpointer = saver
-        return _checkpointer
+            _postgres_pool = ConnectionPool(
+                conninfo=settings.DATABASE_URL,
+                max_size=10,
+                kwargs={
+                    "autocommit": True,
+                    "prepare_threshold": 0,
+                    "row_factory": dict_row,
+                },
+            )
+            saver = PostgresSaver(_postgres_pool)
+            saver.setup()
+            _checkpointer = saver
+            return _checkpointer
+        except Exception as exc:
+            import sys
+            import logfire
+            logfire.error(f"Failed to initialize Postgres checkpointer ({exc}). Falling back to MemorySaver.")
+            sys.stderr.write(f"WARNING: Postgres checkpointer init failed: {exc}. Using MemorySaver fallback.\n")
+            _checkpointer = MemorySaver()
+            return _checkpointer
 
     if backend != "memory":
-        raise RuntimeError(
-            f"Unknown CHECKPOINT_BACKEND={backend!r}. Use memory, redis, or postgres."
-        )
+        import sys
+        sys.stderr.write(f"WARNING: Unknown CHECKPOINT_BACKEND={backend!r}. Falling back to MemorySaver.\n")
 
     _checkpointer = MemorySaver()
     return _checkpointer

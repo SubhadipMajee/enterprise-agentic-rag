@@ -36,8 +36,8 @@ def get_langchain_llm(feature: str = "rag"):
     If Portkey routing is configured, wraps with Portkey headers. Otherwise, connects
     directly to Groq with fallback support.
     """
-    try:
-        if settings.PORTKEY_API_KEY and not settings.GROQ_API_KEY:
+    if settings.PORTKEY_API_KEY:
+        try:
             return ChatOpenAI(
                 api_key=settings.PORTKEY_API_KEY,
                 base_url=PORTKEY_GATEWAY_URL,
@@ -52,11 +52,11 @@ def get_langchain_llm(feature: str = "rag"):
                     }
                 )
             )
-    except Exception as e:
-        logfire.warning(f"Portkey initialization skipped ({e}), using direct ChatGroq.")
+        except Exception as e:
+            logfire.warning(f"Portkey initialization skipped ({e}), using direct ChatGroq.")
 
     return ChatGroq(
-        api_key=settings.GROQ_API_KEY,
+        api_key=settings.GROQ_API_KEY or "not_configured",
         model_name=settings.GROQ_MODEL,
         temperature=0,
     )
