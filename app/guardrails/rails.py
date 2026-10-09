@@ -45,17 +45,21 @@ def guard(message: str) -> tuple[bool, str | None]:
         return False, None
 
     with logfire.span("🛡️ Guardrails Check"):
-        result = _rails.generate(messages=[{"role": "user", "content": message}])
+        try:
+            result = _rails.generate(messages=[{"role": "user", "content": message}])
 
-        # NeMo returns {'role': 'assistant', 'content': '...'} — extract text
-        content = result.get("content", "") if isinstance(result, dict) else str(result)
+            # NeMo returns {'role': 'assistant', 'content': '...'} — extract text
+            content = result.get("content", "") if isinstance(result, dict) else str(result)
 
-        fired = any(indicator in content for indicator in RAIL_INDICATORS)
+            fired = any(indicator in content for indicator in RAIL_INDICATORS)
 
-        if fired:
-            preview = message[:80] if settings.LOG_USER_CONTENT else f"<{len(message)} chars>"
-            logfire.info(f"Guardrails fired | query={preview!r}")
-            return True, content
+            if fired:
+                preview = message[:80] if settings.LOG_USER_CONTENT else f"<{len(message)} chars>"
+                logfire.info(f"Guardrails fired | query={preview!r}")
+                return True, content
 
-        logfire.info("Guardrails passed.")
-        return False, None
+            logfire.info("Guardrails passed.")
+            return False, None
+        except Exception as e:
+            logfire.warning(f"Guardrails check encountered error ({e}) — passing through to LangGraph.")
+            return False, None
