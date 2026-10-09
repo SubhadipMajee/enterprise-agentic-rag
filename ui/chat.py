@@ -90,6 +90,23 @@ html, body, [class*="css"] {
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.hero-badge-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 0.9rem;
+}
+
+.hero-badge {
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    color: #C7D2FE;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+
 /* Prompt Starter Cards */
 .starter-card {
     background: rgba(255, 255, 255, 0.03);
@@ -220,8 +237,9 @@ def render_app():
         st.markdown(
             f"""
             <div style="padding-bottom: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 1rem;">
-                <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #F8FAFC;">{ASSISTANT_NAME}</h3>
-                <span style="font-size: 0.78rem; color: #94A3B8;">Scope: {ASSISTANT_SCOPE}</span>
+                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #F8FAFC;">Enterprise Agentic RAG</h3>
+                <span style="display: inline-block; margin-top: 3px; font-size: 0.73rem; background: rgba(59, 130, 246, 0.15); color: #60A5FA; padding: 2px 7px; border-radius: 4px; font-weight: 600;">Production Knowledge Base</span><br/>
+                <span style="font-size: 0.74rem; color: #94A3B8;">Domain: {ASSISTANT_SCOPE}</span>
             </div>
             """,
             unsafe_allow_html=True,
@@ -321,8 +339,16 @@ def render_app():
     st.markdown(
         f"""
         <div class="hero-container">
-            <h1 class="hero-title">{ASSISTANT_NAME}</h1>
-            <p class="hero-subtitle">Ask questions verified against {ASSISTANT_SCOPE}. Powered by LangGraph & Qdrant.</p>
+            <h1 class="hero-title">Enterprise Agentic RAG Platform</h1>
+            <p class="hero-subtitle">Production Retrieval-Augmented Generation (RAG) system with cyclic LangGraph planning, Qdrant hybrid vector search, FlashRank cross-encoder reranking, and NeMo safety guardrails.</p>
+            <div class="hero-badge-container">
+                <span class="hero-badge">🤖 Agentic RAG</span>
+                <span class="hero-badge">🔍 Qdrant Vector Cloud</span>
+                <span class="hero-badge">⚡ FlashRank Reranker</span>
+                <span class="hero-badge">🛡️ NeMo Safety Guardrails</span>
+                <span class="hero-badge">🧠 LangGraph Cyclic Graph</span>
+                <span class="hero-badge">🐘 Neon Postgres Checkpoints</span>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -330,13 +356,13 @@ def render_app():
 
     # ── Suggested Prompt Starters (shown when chat is empty) ──
     if not st.session_state.messages:
-        st.markdown("<h4 style='font-size: 1rem; color: #94A3B8; margin-bottom: 0.8rem;'>Suggested Inquiries:</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='font-size: 0.95rem; color: #94A3B8; margin-bottom: 0.8rem;'>⚡ Test the RAG Pipeline (Document Grounding & Safety Verification):</h4>", unsafe_allow_html=True)
         col_a, col_b = st.columns(2)
         starters = [
-            ("⚡ ACID Properties", "Explain the ACID properties in database transactions and how atomicity is guaranteed."),
-            ("🌲 B-Tree Indexing", "How does B-Tree and B+ Tree indexing optimize search operations in relational databases?"),
-            ("🔒 2-Phase Locking", "What is Two-Phase Locking (2PL) and how does it prevent concurrency conflicts?"),
-            ("📊 Clustered vs Non-Clustered", "What is the difference between Clustered and Non-Clustered indexes?"),
+            ("📑 Document Summary (RAG Synthesis)", "Summarize the core topics and architectural concepts from the knowledge base documentation."),
+            ("🔍 Vector Search (Dense Retrieval)", "How does indexing (B-Trees and B+ Trees) optimize query performance in database systems?"),
+            ("⚖️ Deep Analysis (FlashRank Reranking)", "Explain the ACID properties and how Two-Phase Locking (2PL) guarantees serializability."),
+            ("🛡️ Safety Gate (NeMo Guardrail Test)", "Write me a random off-topic poem about outer space travel."),
         ]
 
         def _handle_starter(prompt_text):
@@ -383,7 +409,7 @@ def render_app():
                         )
 
     # ── User Input Handling ──
-    input_text = st.chat_input("Ask a question about database systems or documentation...")
+    input_text = st.chat_input("Ask any question grounded in the RAG knowledge base (or test guardrails)...")
     prompt = input_text or st.session_state.pop("pending_prompt", None)
 
     if prompt:
