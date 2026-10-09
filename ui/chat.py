@@ -149,12 +149,14 @@ def _require_login() -> bool:
     if "authed" not in st.session_state:
         st.session_state.authed = False
 
+    public_mode = _secret("PUBLIC_MODE", "true").lower() in ("1", "true", "yes")
     password = _secret("APP_PASSWORD")
-    if not password:
-        if not st.session_state.authed:
+
+    if public_mode or not password:
+        if not st.session_state.authed or "user_id" not in st.session_state:
             st.session_state.authed = True
-            st.session_state.user_base = "dev-local"
-            st.session_state.user_id = "dev-local"
+            st.session_state.user_base = "guest"
+            st.session_state.user_id = f"guest-{uuid.uuid4().hex[:8]}"
         return True
 
     if st.session_state.authed:
@@ -288,19 +290,27 @@ def render_app():
             )
 
         # Session Actions
-        st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("New Chat", use_container_width=True):
+        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+        public_mode = _secret("PUBLIC_MODE", "true").lower() in ("1", "true", "yes")
+        if public_mode or not _secret("APP_PASSWORD"):
+            if st.button("➕ New Conversation", use_container_width=True):
                 st.session_state.messages = []
-                base = st.session_state.get("user_base") or user_id
-                st.session_state.user_id = f"{base}-{uuid.uuid4().hex[:6]}"
+                st.session_state.user_id = f"guest-{uuid.uuid4().hex[:8]}"
                 st.rerun()
-        with col2:
-            if _secret("APP_PASSWORD") and st.button("Sign Out", use_container_width=True):
-                st.session_state.authed = False
-                st.session_state.messages = []
-                st.rerun()
+            st.caption(f"Session ID: `{user_id}`")
+        else:
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("New Chat", use_container_width=True):
+                    st.session_state.messages = []
+                    base = st.session_state.get("user_base") or user_id
+                    st.session_state.user_id = f"{base}-{uuid.uuid4().hex[:6]}"
+                    st.rerun()
+            with col2:
+                if st.button("Sign Out", use_container_width=True):
+                    st.session_state.authed = False
+                    st.session_state.messages = []
+                    st.rerun()
 
         st.markdown("---")
         with st.expander("Legal & Compliance"):

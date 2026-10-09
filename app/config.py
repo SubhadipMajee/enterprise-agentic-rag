@@ -111,8 +111,6 @@ class Settings:
         if self.is_production:
             if not self.API_KEY:
                 missing.append("API_KEY")
-            if not self.APP_PASSWORD:
-                missing.append("APP_PASSWORD")
 
         for name, value in required:
             if not value:
